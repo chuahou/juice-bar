@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
             assert(compoundButton == serviceSwitch);
             if (serviceSwitch.isChecked()) {
                 Log.i(TAG, "Starting service");
-                startService(new Intent(this, BarService.class));
+                startForegroundService(new Intent(this, BarService.class));
             } else {
                 Log.i(TAG, "Stopping service");
                 stopService(new Intent(this, BarService.class));
