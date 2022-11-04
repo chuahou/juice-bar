@@ -4,9 +4,19 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.PixelFormat;
+import android.net.Uri;
+import android.os.BatteryManager;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
+import android.view.WindowManager;
+import android.widget.TextView;
 
 public class BarService extends Service {
 
@@ -19,13 +29,36 @@ public class BarService extends Service {
 
     /** Worker thread that does the heavy lifting. */
     class BarThread extends Thread {
+        private TextView text;
+        public BarThread(TextView text) { this.text = text; }
+
         public void run() {
+            // Handler to run things in main UI thread.
+            Handler handler = new Handler(Looper.getMainLooper());
+
+            // Main loop. Stops when interrupted.
             try {
                 while (!interrupted()) {
+                    // Receive battery information.
+                    IntentFilter battIntentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+                    Intent battStatus = (BarService.this).registerReceiver(null, battIntentFilter);
+
+                    // Battery level out of 100.0.
+                    float battLevel = battStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, 0) * 100
+                            / (float) battStatus.getIntExtra(BatteryManager.EXTRA_SCALE, 1);
+
+                    // Scale battery level to be % of maximum intended charge.
+                    float battLevelScaled = battLevel / 0.8f;
+
+                    Log.i(TAG, "Battery level: " + battLevel + "%, scaled: " + battLevelScaled + "%");
+                    handler.post(() -> { text.setText(battLevelScaled + "%"); });
+
                     sleep(1000);
-                    Log.i(TAG, "Running");
                 }
             } catch (InterruptedException e) {}
+
+            // Remove view now that we are shut down.
+            getSystemService(WindowManager.class).removeView(text);
         }
     }
     private BarThread thread = null;
@@ -51,8 +84,17 @@ public class BarService extends Service {
                 .build();
         startForeground(NOTIF_ID, notification);
 
+        TextView text = new TextView(this);
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                PixelFormat.TRANSLUCENT);
+        getSystemService(WindowManager.class).addView(text, params);
+
         // Start thread.
-        thread = new BarThread();
+        thread = new BarThread(text);
         thread.start();
         return START_NOT_STICKY;
     }
