@@ -4,6 +4,8 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
@@ -31,39 +33,23 @@ public class BarService extends Service {
     /** BarView to draw. */
     private BarView barView;
 
-    /** Worker thread that does the heavy lifting. */
-    class BarThread extends Thread {
-
-        private BarView barView;
-        public BarThread(BarView barView) { this.barView = barView; }
-
-        public void run() {
-            Log.i(TAG, "Thread started");
-
-            // Main loop. Stops when interrupted.
-            try {
-                while (!interrupted()) {
-                    // Receive battery information.
-                    IntentFilter battIntentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-                    Intent battStatus = (BarService.this).registerReceiver(null, battIntentFilter);
-
-                    // Battery level out of 1.0.
-                    float battLevel = battStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)
-                            / (float) battStatus.getIntExtra(BatteryManager.EXTRA_SCALE, 1);
-
-                    // Scale battery level to be % of maximum intended charge and send it to
-                    // BarView.
-                    float battLevelScaled = battLevel / 0.8f;
-                    barView.setBattLevel(battLevelScaled);
-
-                    sleep(1000);
-                }
-            } catch (InterruptedException e) {}
-
-            Log.i(TAG, "Thread stopped");
+    /** Broadcast receiver for battery changes. */
+    private class BattReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "Battery changed, setting battery level");
+            setBattLevelFromIntent(intent);
         }
     }
-    private BarThread thread = null;
+    private BattReceiver battReceiver = null;
+
+    /** Get battery level from given intent and update barView. */
+    private void setBattLevelFromIntent(Intent intent) {
+        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
+        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
+        float battLevel = level / (float) scale;
+        barView.setBattLevel(battLevel / 0.8f);
+    }
 
     @Override
     public void onCreate() {
@@ -106,20 +92,23 @@ public class BarService extends Service {
                 PixelFormat.TRANSLUCENT);
         windowManager.addView(barView, params);
 
-        // Start thread.
-        thread = new BarThread(barView);
-        thread.start();
+        // Register receiver for battery information change.
+        battReceiver = new BattReceiver();
+        Intent battStatus = this.registerReceiver(battReceiver,
+                new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        setBattLevelFromIntent(battStatus);
+
         return START_NOT_STICKY;
     }
 
-    /** Stops the service by interrupting the worker thread. */
+    /** Stops the service by removing view and unregistering receiver. */
     @Override
     public void onDestroy() {
         Log.i(TAG, "Stopping service");
         running = false;
         getSystemService(WindowManager.class).removeView(barView);
-        if (thread != null) {
-            thread.interrupt();
+        if (battReceiver != null) {
+            this.unregisterReceiver(battReceiver);
         }
     }
 
