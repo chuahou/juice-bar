@@ -32,9 +32,7 @@ public class MainActivity extends AppCompatActivity {
         // Handle switch being switched on/off.
         serviceSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
             assert(compoundButton == serviceSwitch);
-            if (serviceSwitch.isChecked()) {
-                Log.i(TAG, "Starting service");
-
+            if (serviceSwitch.isChecked() && !BarService.isRunning()) {
                 // Get permissions to draw if necessary.
                 Log.i(TAG, "Getting permissions to draw");
                 if (!Settings.canDrawOverlays(this)) {
@@ -44,15 +42,30 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     startService(); // Start service directly otherwise.
                 }
-            } else {
+            } else if (!serviceSwitch.isChecked() && BarService.isRunning()){
                 Log.i(TAG, "Stopping service");
                 stopService(new Intent(this, BarService.class));
             }
         });
     }
 
+    /** Set switch state based on whether service is running. We run this in onResume() to cases
+      * where the activity isn't stopped fully.
+      */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (serviceSwitch != null) {
+            if (BarService.isRunning()) {
+                Log.i(TAG, "Service already running, turning switch on");
+                serviceSwitch.setChecked(true);
+            }
+        }
+    }
+
     /** Start bar service. */
     private void startService() {
+        Log.i(TAG, "Starting service");
         startForegroundService(new Intent(this, BarService.class));
     }
 
@@ -62,10 +75,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == permsRequestCode) {
-            if (Settings.canDrawOverlays(this))
+            if (Settings.canDrawOverlays(this)) {
+                Log.i(TAG, "Obtained permissions, starting service");
                 startService();
-            else // Didn't get perms, turn off switch.
+            } else { // Didn't get perms, turn off switch.
+                Log.i(TAG, "Did not get permissions, turning switch off");
                 serviceSwitch.setChecked(false);
+            }
         }
     }
 }

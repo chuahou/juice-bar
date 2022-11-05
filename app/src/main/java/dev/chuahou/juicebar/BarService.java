@@ -20,6 +20,12 @@ import android.widget.TextView;
 
 public class BarService extends Service {
 
+    /** Check if service is currently running. */
+    public static boolean isRunning() {
+        return running;
+    }
+    private static boolean running = false;
+
     /** Tag for logging. */
     private static final String TAG = "juicebar.BarService";
 
@@ -33,6 +39,8 @@ public class BarService extends Service {
         public BarThread(TextView text) { this.text = text; }
 
         public void run() {
+            Log.i(TAG, "Thread started");
+
             // Handler to run things in main UI thread.
             Handler handler = new Handler(Looper.getMainLooper());
 
@@ -59,6 +67,8 @@ public class BarService extends Service {
 
             // Remove view now that we are shut down.
             getSystemService(WindowManager.class).removeView(text);
+
+            Log.i(TAG, "Thread stopped");
         }
     }
     private BarThread thread = null;
@@ -76,6 +86,8 @@ public class BarService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "Starting service");
+
+        running = true;
 
         // Make us a foreground service.
         Notification notification = new Notification.Builder(this, CHANNEL_ID)
@@ -103,6 +115,7 @@ public class BarService extends Service {
     @Override
     public void onDestroy() {
         Log.i(TAG, "Stopping service");
+        running = false;
         if (thread != null) {
             thread.interrupt();
         }
