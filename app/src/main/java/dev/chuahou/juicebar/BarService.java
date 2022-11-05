@@ -8,12 +8,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.os.BatteryManager;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
-import android.widget.TextView;
 
 public class BarService extends Service {
 
@@ -30,16 +28,17 @@ public class BarService extends Service {
     private static final String CHANNEL_ID = "Juice Bar notification channel";
     private static final int NOTIF_ID = 2357;
 
+    /** BarView to draw. */
+    private BarView barView;
+
     /** Worker thread that does the heavy lifting. */
     class BarThread extends Thread {
-        private TextView text;
-        public BarThread(TextView text) { this.text = text; }
+
+        private BarView barView;
+        public BarThread(BarView barView) { this.barView = barView; }
 
         public void run() {
             Log.i(TAG, "Thread started");
-
-            // Handler to run things in main UI thread.
-            Handler handler = new Handler(Looper.getMainLooper());
 
             // Main loop. Stops when interrupted.
             try {
@@ -48,22 +47,18 @@ public class BarService extends Service {
                     IntentFilter battIntentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
                     Intent battStatus = (BarService.this).registerReceiver(null, battIntentFilter);
 
-                    // Battery level out of 100.0.
-                    float battLevel = battStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, 0) * 100
+                    // Battery level out of 1.0.
+                    float battLevel = battStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)
                             / (float) battStatus.getIntExtra(BatteryManager.EXTRA_SCALE, 1);
 
-                    // Scale battery level to be % of maximum intended charge.
+                    // Scale battery level to be % of maximum intended charge and send it to
+                    // BarView.
                     float battLevelScaled = battLevel / 0.8f;
-
-                    Log.i(TAG, "Battery level: " + battLevel + "%, scaled: " + battLevelScaled + "%");
-                    handler.post(() -> { text.setText(battLevelScaled + "%"); });
+                    barView.setBattLevel(battLevelScaled);
 
                     sleep(1000);
                 }
             } catch (InterruptedException e) {}
-
-            // Remove view now that we are shut down.
-            getSystemService(WindowManager.class).removeView(text);
 
             Log.i(TAG, "Thread stopped");
         }
@@ -93,17 +88,26 @@ public class BarService extends Service {
                 .build();
         startForeground(NOTIF_ID, notification);
 
-        TextView text = new TextView(this);
+        // Create our bar view and place it over the status bar.
+        barView = new BarView(this);
+        WindowManager windowManager = getSystemService(WindowManager.class);
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        windowManager.getDefaultDisplay().getMetrics(displayMetrics);
+        Log.d(TAG, "Screen size: " + displayMetrics.widthPixels + "x" + displayMetrics.heightPixels);
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                WindowManager.LayoutParams.MATCH_PARENT,
+                100,
+                0, -displayMetrics.heightPixels / 2, // Position at top of screen.
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // Overlay behind status bar.
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE // Forward touches.
+                        | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                            // Allow us to go behind status bar.
                 PixelFormat.TRANSLUCENT);
-        getSystemService(WindowManager.class).addView(text, params);
+        windowManager.addView(barView, params);
 
         // Start thread.
-        thread = new BarThread(text);
+        thread = new BarThread(barView);
         thread.start();
         return START_NOT_STICKY;
     }
@@ -113,6 +117,7 @@ public class BarService extends Service {
     public void onDestroy() {
         Log.i(TAG, "Stopping service");
         running = false;
+        getSystemService(WindowManager.class).removeView(barView);
         if (thread != null) {
             thread.interrupt();
         }
