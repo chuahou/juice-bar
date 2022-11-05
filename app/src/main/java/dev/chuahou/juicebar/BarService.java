@@ -69,7 +69,9 @@ public class BarService extends Service {
 
         // Make us a foreground service.
         Notification notification = new Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle("Juice Bar")
                 .setContentText("Juice Bar is running")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setOngoing(true)
                 .build();
         startForeground(NOTIF_ID, notification);
