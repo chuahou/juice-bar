@@ -6,10 +6,12 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowInsets;
 
 /** View to be drawn by BarService's thread. */
 public class BarView extends View {
-    private float battLevel = 0.0f;
+    private float battLevel = 0.0f; // Current battery level.
+    private boolean fullscreen = false; // Whether there is an app currently in fullscreen mode.
 
     /** Single sub-bar, representing one level. */
     private class SubBar {
@@ -54,11 +56,25 @@ public class BarView extends View {
         super(context);
     }
 
+    /** Detect when fullscreen mode is entered or exited. */
+    @Override
+    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        boolean nowFullscreen = !insets.isVisible(WindowInsets.Type.statusBars());
+        if (fullscreen != nowFullscreen) {
+            fullscreen = nowFullscreen;
+            Log.i(TAG, "OnApplyWindowInsetsListener: fullscreen changed to " + fullscreen);
+            postInvalidate(); // Redraw with new knowledge of whether fullscreen is applied.
+        }
+        return insets;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
-        Log.i(TAG, "Redrawing");
-        super.onDraw(canvas);
-        for (SubBar subBar : subBars)
-            subBar.draw(canvas);
+        if (!fullscreen) { // Only draw if not fullscreen.
+            Log.i(TAG, "Redrawing");
+            super.onDraw(canvas);
+            for (SubBar subBar : subBars)
+                subBar.draw(canvas);
+        } else Log.i(TAG, "Not drawing because fullscreen");
     }
 }

@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "dev.chuahou.juicebar"
-        minSdk 26
+        minSdk 30
         targetSdk 32
         versionCode 1
         versionName "1.0"
