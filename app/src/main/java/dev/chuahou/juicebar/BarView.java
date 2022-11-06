@@ -25,19 +25,22 @@ public class BarView extends View {
         public void draw(Canvas canvas) {
             float percentage = Math.min(battLevel, maxPercentage);
             Log.i(TAG, "Drawing sub-bar with max at " + maxPercentage + "% at " + percentage + "%");
-            rect.setBounds(0, 0, (int) (canvas.getWidth() * percentage), canvas.getHeight());
+            rect.setBounds(0, 0, (int) (getWidth() * percentage), getHeight());
             rect.draw(canvas);
         }
     }
 
     // Drawn from first element to last. The later in the array, the higher the sub-bar.
     private final SubBar[] subBars = {
-        new SubBar(1.0000f, 0xFF0099CC), // 80%
+        new SubBar(1.0000f, 0xFF86E849), // 80%
         new SubBar(0.8125f, 0xFFC1E859), // 65%
         new SubBar(0.4375f, 0xFFF0A30A), // 35%
         new SubBar(0.1875f, 0xFFE74C3C), // 15%
         new SubBar(0.0625f, 0xFFFF2D3B), //  5%
     };
+
+    /** Separator below sub-bars. */
+    private final ShapeDrawable separator = new ShapeDrawable(new RectShape());
 
     /** Tag for logging. */
     private static final String TAG = "juicebar.BarView";
@@ -54,6 +57,7 @@ public class BarView extends View {
 
     public BarView(Context context) {
         super(context);
+        separator.getPaint().setColor(0xFF000000);
     }
 
     /** Detect when fullscreen mode is entered or exited. */
@@ -75,6 +79,8 @@ public class BarView extends View {
             super.onDraw(canvas);
             for (SubBar subBar : subBars)
                 subBar.draw(canvas);
+            separator.setBounds(0, getHeight() - 1, getWidth(), getHeight());
+            separator.draw(canvas);
         } else Log.i(TAG, "Not drawing because fullscreen");
     }
 }
