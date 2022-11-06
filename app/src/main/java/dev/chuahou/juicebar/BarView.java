@@ -15,8 +15,8 @@ public class BarView extends View {
 
     /** Single sub-bar, representing one level. */
     private class SubBar {
-        private ShapeDrawable rect;
-        private float maxPercentage; // % of battery corresponding to this sub-bar.\
+        private final ShapeDrawable rect;
+        private final float maxPercentage; // % of battery corresponding to this sub-bar.\
         public SubBar(float maxPercentage, int color) {
             rect = new ShapeDrawable(new RectShape());
             rect.getPaint().setColor(color);
@@ -31,7 +31,7 @@ public class BarView extends View {
     }
 
     // Drawn from first element to last. The later in the array, the higher the sub-bar.
-    private final SubBar subBars[] = {
+    private final SubBar[] subBars = {
         new SubBar(1.0000f, 0xFF0099CC), // 80%
         new SubBar(0.8125f, 0xFFC1E859), // 65%
         new SubBar(0.4375f, 0xFFF0A30A), // 35%
