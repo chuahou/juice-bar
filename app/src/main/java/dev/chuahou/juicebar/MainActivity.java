@@ -5,10 +5,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
-import android.widget.Switch;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -16,7 +16,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "juicebar.MainActivity";
 
     /** Main service on/off switch. */
-    private Switch serviceSwitch;
+    private SwitchCompat serviceSwitch;
 
     /** Result code for asking for permissions. */
     private static final int permsRequestCode = 19875;
