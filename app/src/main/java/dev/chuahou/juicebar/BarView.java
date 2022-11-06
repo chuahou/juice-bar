@@ -14,8 +14,7 @@ public class BarView extends View {
     /** Single sub-bar, representing one level. */
     private class SubBar {
         private ShapeDrawable rect;
-        private float maxPercentage; // % of battery corresponding to this sub-bar.
-        private static final int height = 8; // Height of sub-bar.
+        private float maxPercentage; // % of battery corresponding to this sub-bar.\
         public SubBar(float maxPercentage, int color) {
             rect = new ShapeDrawable(new RectShape());
             rect.getPaint().setColor(color);
@@ -24,7 +23,7 @@ public class BarView extends View {
         public void draw(Canvas canvas) {
             float percentage = Math.min(battLevel, maxPercentage);
             Log.i(TAG, "Drawing sub-bar with max at " + maxPercentage + "% at " + percentage + "%");
-            rect.setBounds(0, 0, (int) (canvas.getWidth() * percentage), height);
+            rect.setBounds(0, 0, (int) (canvas.getWidth() * percentage), canvas.getHeight());
             rect.draw(canvas);
         }
     }

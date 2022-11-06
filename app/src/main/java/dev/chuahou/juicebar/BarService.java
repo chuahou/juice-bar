@@ -84,7 +84,7 @@ public class BarService extends Service {
         Log.d(TAG, "Screen size: " + displayMetrics.widthPixels + "x" + displayMetrics.heightPixels);
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
-                100,
+                8, // Fixed hard-coded height for personal preference for now.
                 0, -displayMetrics.heightPixels / 2, // Position at top of screen.
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // Overlay behind status bar.
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE // Forward touches.
