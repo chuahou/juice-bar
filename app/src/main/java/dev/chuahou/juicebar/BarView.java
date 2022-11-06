@@ -42,6 +42,9 @@ public class BarView extends View {
     /** Background behind sub-bars. */
     private final ShapeDrawable bg = new ShapeDrawable(new RectShape());
 
+    /** Overcharge bar. */
+    private final ShapeDrawable overcharge = new ShapeDrawable(new RectShape());
+
     /** Tag for logging. */
     private static final String TAG = "juicebar.BarView";
 
@@ -58,6 +61,7 @@ public class BarView extends View {
     public BarView(Context context) {
         super(context);
         bg.getPaint().setColor(0xFF000000);
+        overcharge.getPaint().setColor(0xFFFFCDF5);
     }
 
     /** Detect when fullscreen mode is entered or exited. */
@@ -81,6 +85,14 @@ public class BarView extends View {
             bg.draw(canvas);
             for (SubBar subBar : subBars)
                 subBar.draw(canvas);
+
+            // Overcharge bar up to 1.25f.
+            if (battLevel > 1.0f) {
+                overcharge.setBounds(0, 0,
+                        (int) (getWidth() * ((battLevel - 1.0f) / 0.25f)),
+                        getHeight());
+                overcharge.draw(canvas);
+            }
         } else Log.i(TAG, "Not drawing because fullscreen");
     }
 }
